@@ -20,9 +20,8 @@ class NotionAPI:
         ">=": "greater_than_or_equal_to",
     }
 
-    def __init__(self, token: str, databaseId: str) -> None:
+    def __init__(self, token: str) -> None:
         self.token = token
-        self.databaseId = databaseId
         self.DEFAULT_NOTION_VERSION = "2022-06-28"
         self.AUTHORIZATION = "Bearer " + self.token
         self.headers = {
@@ -57,8 +56,10 @@ class NotionAPI:
         else:
             return response
 
-    def construct_payload_for_pages_creation(self, properties_data):
-        json_data = {"parent": {"database_id": self.databaseId}, "properties": {}}
+    def construct_payload_for_pages_creation(
+        self, database_id: str, properties_data: dict
+    ):
+        json_data = {"parent": {"database_id": database_id}, "properties": {}}
 
         for data in properties_data["data"]:
             if data.get("name") == "number":
@@ -81,9 +82,9 @@ class NotionAPI:
 
         return json_data
 
-    def get_table_header_info(self):
+    def get_table_header_info(self, database_id: str):
         response = self.request_helper(
-            url=self.DATABASES.format(self.databaseId), method="GET"
+            url=self.DATABASES.format(database_id), method="GET"
         )
 
         database_info = response.json()
@@ -213,31 +214,35 @@ class NotionAPI:
 
         return query
 
-    def insert(self, query) -> None:
-        table_header = self.get_table_header_info()
-
+    def insert(self, query: str) -> None:
         parsed_data = MySQLQueryParser(query).parse()
+
+        database_id = parsed_data["table_name"]
+
+        table_header = self.get_table_header_info(database_id)
 
         parsed_data = self.__add_name_and_id_to_parsed_data_for_insert_statements(
             parsed_data, table_header
         )
 
-        payload = self.construct_payload_for_pages_creation(parsed_data)
+        payload = self.construct_payload_for_pages_creation(database_id, parsed_data)
 
         return self.request_helper(self.PAGES, method="POST", payload=payload)
 
-    def insert_many(self, sql, val) -> None:
-        table_header = self.get_table_header_info()
-
+    def insert_many(self, sql, val) -> list:
         results = []
         for row in val:
             query = self.__generate_query(sql, row)
 
             parsed_data = MySQLQueryParser(query).parse()
+            database_id = parsed_data["table_name"]
+            table_header = self.get_table_header_info(database_id)
             parsed_data = self.__add_name_and_id_to_parsed_data_for_insert_statements(
                 parsed_data, table_header
             )
-            payload = self.construct_payload_for_pages_creation(parsed_data)
+            payload = self.construct_payload_for_pages_creation(
+                database_id, parsed_data
+            )
             results.append(
                 self.request_helper(self.PAGES, method="POST", payload=payload)
             )
@@ -247,7 +252,9 @@ class NotionAPI:
         table_header = self.get_table_header_info()
         parsed_data = MySQLQueryParser(query).parse()
 
-        # We will need to add title, rich_text or number acc to the type of the property in the parsed_data which is parsed from the SELECT statement
+        database_id = parsed_data["table_name"]
+
+        # We will need to add title, rich_text or number acc to the type of the property in the parsed_data which is parsed from the SELECT statement.
         # We only need to add name and id if there are condition in the statement
 
         if parsed_data.get("conditions") is not None:
@@ -317,7 +324,7 @@ class NotionAPI:
                 payload["filter"]["and"].append(filter)
 
         response = self.request_helper(
-            self.QUERY_DATABASE.format(self.databaseId), method="POST", payload=payload
+            self.QUERY_DATABASE.format(database_id), method="POST", payload=payload
         ).json()
 
         for entry in response["results"]:
@@ -358,9 +365,10 @@ class NotionAPI:
         return results
 
     def update(self, query) -> None:
-        table_header = self.get_table_header_info()
-
         parsed_data = MySQLQueryParser(query).parse()
+        database_id = parsed_data["table_name"]
+
+        table_header = self.get_table_header_info(database_id)
 
         parsed_data = self.__add_name_and_id_to_parsed_data_for_update_statements(
             parsed_data, table_header
@@ -374,7 +382,9 @@ class NotionAPI:
             raise ValueError("No Data Found")
 
         for entry in select_statement_response["data"]:
-            payload = self.construct_payload_for_pages_creation(parsed_data)
+            payload = self.construct_payload_for_pages_creation(
+                database_id, parsed_data
+            )
 
             # We don't want "parent" key in the payload
             payload.pop("parent")
