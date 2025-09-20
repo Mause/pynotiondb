@@ -1,171 +1,136 @@
-import re
-import csv
+from sqlglot import parse
+from sqlglot.expressions import (
+    EQ,
+    And,
+    Delete,
+    Expression,
+    Insert,
+    Select,
+    Star,
+    Update,
+)
 
 
 class MySQLQueryParser:
-    INSERT_PATTERN = r"INSERT INTO ([\w\s]+) \(([^)]+)\) VALUES \(([^)]+)\)"
-    SELECT_PATTERN = r"SELECT\s+(?P<columns>[a-zA-Z\*,\s]+)\s+FROM\s+(?P<table>\w+)(?:\s+WHERE\s+(?P<conditions>.+))?"
-    UPDATE_PATTERN = r"UPDATE\s+(\w+)\s+SET\s+(.*?)\s+WHERE\s+(.*)"
-    DELETE_PATTERN = r"DELETE\s+FROM\s+(\w+)\s+WHERE\s+(.*)"
-
-    def __init__(self, statement):
-        self.statement = statement
+    def __init__(self, statement: str) -> None:
+        self.statement = parse(statement)[0]
 
     @staticmethod
-    def _process_string(input_string):
-        # CSV reader with a single quote as the quote character
-        csv_reader = csv.reader([input_string], quotechar="'", skipinitialspace=True)
+    def _process_string(input_string: list[Expression]) -> list[str]:
+        return [hing.this for hing in input_string]
 
-        processed_values = next(csv_reader)
+    def extract_insert_statement_info(self) -> dict:
+        assert isinstance(self.statement, Insert)
+        match: Insert = self.statement
 
-        processed_values = [
-            value.strip() for value in processed_values if value.strip()
-        ]
-
-        return processed_values
-
-    def extract_insert_statement_info(self):
-        match = re.match(self.INSERT_PATTERN, self.statement)
-
-        if match:
-            table_name = match.group(1)
-            prop_string = match.group(2)
-            values_string = match.group(3)
-
-            properties = self._process_string(prop_string)
-            values = self._process_string(values_string)
-
-            data = []
-
-            for index in range(len(properties)):
-                data.append({"property": properties[index], "value": values[index]})
-
-            if len(properties) > len(values):
-                raise Exception(
-                    "The number of properties specified in the INSERT statement is larger than the number of values. Please ensure that the number of properties matches the number of values to correctly assign each property a corresponding value."
-                )
-
-            elif len(values) > len(properties):
-                raise Exception(
-                    "The number of values provided in the INSERT statement is larger than the number of properties. Please ensure that the number of values matches the number of properties in order to correctly map each value to its corresponding property."
-                )
-
-            return {"table_name": table_name, "data": data}
+        breakpoint()
+        table_name = match.this.this.this.this
+        if "expressions" in match.this.args:
+            prop_string = match.this.expressions
         else:
-            return None
+            prop_string = [
+                match.this.this.this,
+                *[join.this.this for join in match.this.this.args.get("joins")],
+            ]
+        values_string = match.expression.expressions[0].expressions
 
-    def extract_select_statement_info(self):
-        select_pattern = re.compile(self.SELECT_PATTERN, re.IGNORECASE)
-        match = select_pattern.match(self.statement)
+        properties = self._process_string(prop_string)
+        values = self._process_string(values_string)
 
-        if match:
-            table_name = match.group("table")
+        data = []
 
-            columns = match.group("columns").split(",")
-            columns = [col.strip() for col in columns if col.strip() != "*"]
+        for index in range(len(properties)):
+            data.append({"property": properties[index], "value": values[index]})
 
-            conditions_str = match.group("conditions")
+        if len(properties) > len(values):
+            raise Exception(
+                "The number of properties specified in the INSERT statement is "
+                "larger than the number of values. Please ensure that the number "
+                "of properties matches the number of values to correctly assign "
+                "each property a corresponding value."
+            )
 
-            conditions = []
-            if conditions_str:
-                conditions_list = re.split(r"\s+(AND|OR)\s+", conditions_str)
+        elif len(values) > len(properties):
+            raise Exception(
+                "The number of values provided in the INSERT statement is larger "
+                "than the number of properties. Please ensure that the number of "
+                "values matches the number of properties in order to correctly "
+                "map each value to its corresponding property."
+            )
 
-                i = 0
+        return {"table_name": table_name, "data": data}
 
-                while i < len(conditions_list):
-                    if conditions_list[i] == "AND":
-                        conditions.append(conditions_list[i])
-                        i += 1
-                    else:
-                        try:
-                            for condition in conditions_list:
-                                operator_pattern = re.compile(r"==|<=|>=|LIKE|>|<|=")
-                                operator_match = operator_pattern.search(condition)
-                                if operator_match:
-                                    operator = operator_match.group(0)
-                                    key, value = condition.split(operator, 1)
+    def extract_select_statement_info(self) -> dict:
+        assert isinstance(self.statement, Select)
+        match: Select = self.statement
 
-                                else:
-                                    raise Exception("Enable to parse")
-                        except Exception:
-                            raise Exception(
-                                "The operator you are trying to use has not been implemented yet"
-                            )
+        table_name = match.args.get("from").this.this.this
 
-                        key = key.strip()
-                        operator = operator.strip()
-                        value = value.strip().strip("'")
-                        condition = {
-                            "parameter": key,
-                            "operator": operator,
-                            "value": int(value) if value.isdigit() else value,
-                        }
-                        conditions.append(condition)
-                        i += 2
+        columns = match.expressions
 
-            outut = {
-                "table": table_name,
-                "columns": columns if len(columns) != 0 else None,
-                "conditions": conditions if len(conditions) != 0 else None,
-            }
+        conditions_str = match.args.get("where")
 
-            return outut
+        conditions = []
+        if conditions_str:
+            if isinstance(conditions_str.this, And):
+                conditions.append(self.parse_condition(conditions_str.this.this))
+                conditions.append(self.parse_condition(conditions_str.this.expression))
+            else:
+                conditions.append(self.parse_condition(conditions_str.this))
 
-        raise ValueError("Invalid SQL statement")
+        return {
+            "table": table_name,
+            "columns": None
+            if len(columns) == 1 and isinstance(columns[0], Star)
+            else columns,
+            "conditions": conditions if len(conditions) != 0 else None,
+        }
 
-    def extract_update_statement_info(self):
-        match = re.search(self.UPDATE_PATTERN, self.statement)
+    def parse_condition(self, op: Expression) -> dict:
+        operator = type(op).__name__
+        key = op.this.this.this
+        value = op.expression.this
 
-        if not match:
-            return None
+        key = key.strip()
+        operator = operator.strip()
+        return {
+            "parameter": key,
+            "operator": operator,
+            "value": int(value) if value.isdigit() else value,
+        }
 
-        table_name = match.group(1)
-        set_values_str = match.group(2)
-        where_clause = match.group(3)
+    def extract_update_statement_info(self) -> dict:
+        match: Update = self.statement
+
+        table_name = match.this.this.this
+        set_values_str = match.expressions
+        where_clause = match.args.get("where")
 
         set_values = self.extract_set_values(set_values_str)
 
-        output = {
+        return {
             "table_name": table_name,
             "set_values": set_values,
             "where_clause": where_clause,
         }
-        return output
 
-    def extract_delete_statement_info(self):
-        match = re.search(self.DELETE_PATTERN, self.statement)
+    def extract_delete_statement_info(self) -> dict:
+        match: Delete = self.statement
 
-        if not match:
-            return None
-
-        table_name = match.group(1)
-        where_clause = match.group(2)
+        table_name = match.this.this.this
+        where_clause = match.args.get("where")
 
         return {"table_name": table_name, "where_clause": where_clause}
 
-    def extract_set_values(self, set_values_str):
+    def extract_set_values(self, set_values_str: list[EQ]) -> list[dict]:
         set_values = []
         # Split by 'AND', but not within quotes
-        pairs = re.findall(r"(?:[^\'AND]+|\'[^\']*\')+", set_values_str)
+        pairs = set_values_str
         for pair in pairs:
-            pair = pair.strip()
-            if not pair:
-                continue
             # Find the position of the first '=' outside quotes
-            eq_pos = -1
-            in_quote = False
-            for i, char in enumerate(pair):
-                if char == "'":
-                    in_quote = not in_quote
-                elif char == "=" and not in_quote:
-                    eq_pos = i
-                    break
 
-            if eq_pos == -1:
-                continue
-
-            key = pair[:eq_pos].strip()
-            value = pair[eq_pos + 1 :].strip().strip("'")
+            key = pair.this.this.this
+            value = pair.expression.this
 
             # Handle numeric values
             if value.isdigit():
@@ -176,32 +141,29 @@ class MySQLQueryParser:
             set_values.append({"key": key, "value": value})
         return set_values
 
-    def parse(self):
-        if re.match(self.INSERT_PATTERN, self.statement):
+    def parse(self) -> dict:
+        if isinstance(self.statement, Insert):
             return self.extract_insert_statement_info()
 
-        if re.compile(self.SELECT_PATTERN, re.IGNORECASE).match(self.statement):
+        if isinstance(self.statement, Select):
             return self.extract_select_statement_info()
 
-        if re.search(self.UPDATE_PATTERN, self.statement):
+        if isinstance(self.statement, Update):
             return self.extract_update_statement_info()
 
-        if re.search(self.DELETE_PATTERN, self.statement):
+        if isinstance(self.statement, Delete):
             return self.extract_delete_statement_info()
 
         raise ValueError("Invalid SQL statement")
 
-    def check_statement(self):
-        if re.match(self.INSERT_PATTERN, self.statement):
+    def check_statement(self) -> tuple[bool, str]:
+        if isinstance(self.statement, Insert):
             return True, "insert"
-
-        if re.compile(self.SELECT_PATTERN, re.IGNORECASE).match(self.statement):
+        if isinstance(self.statement, Select):
             return True, "select"
-
-        if re.search(self.UPDATE_PATTERN, self.statement):
+        if isinstance(self.statement, Update):
             return True, "update"
-
-        if re.search(self.DELETE_PATTERN, self.statement):
+        if isinstance(self.statement, Delete):
             return True, "delete"
 
         return False, "unknown"

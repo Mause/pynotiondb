@@ -2,7 +2,11 @@
 # name: test_sql_parser[DELETE FROM table WHERE column1 = 'value1';]
   dict({
     'table_name': 'table',
-    'where_clause': "column1 = 'value1';",
+    'where_clause': Where(
+    this=EQ(
+      this=Column(
+        this=Identifier(this=column1, quoted=False)),
+      expression=Literal(this='value1', is_string=True))),
   })
 # ---
 # name: test_sql_parser[INSERT INTO table (column1, column2) VALUES ('value1', 'value2')]
@@ -36,6 +40,10 @@
       }),
     ]),
     'table_name': 'table',
-    'where_clause': "column2 = 'value2'",
+    'where_clause': Where(
+    this=EQ(
+      this=Column(
+        this=Identifier(this=column2, quoted=False)),
+      expression=Literal(this='value2', is_string=True))),
   })
 # ---
