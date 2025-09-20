@@ -3,7 +3,6 @@ import csv
 
 
 class MySQLQueryParser:
-
     INSERT_PATTERN = r"INSERT INTO ([\w\s]+) \(([^)]+)\) VALUES \(([^)]+)\)"
     SELECT_PATTERN = r"SELECT\s+(?P<columns>[a-zA-Z\*,\s]+)\s+FROM\s+(?P<table>\w+)(?:\s+WHERE\s+(?P<conditions>.+))?"
     UPDATE_PATTERN = r"UPDATE\s+(\w+)\s+SET\s+(.*?)\s+WHERE\s+(.*)"
@@ -60,7 +59,6 @@ class MySQLQueryParser:
         match = select_pattern.match(self.statement)
 
         if match:
-
             table_name = match.group("table")
 
             columns = match.group("columns").split(",")
@@ -70,7 +68,6 @@ class MySQLQueryParser:
 
             conditions = []
             if conditions_str:
-
                 conditions_list = re.split(r"\s+(AND|OR)\s+", conditions_str)
 
                 i = 0
@@ -82,7 +79,7 @@ class MySQLQueryParser:
                     else:
                         try:
                             for condition in conditions_list:
-                                operator_pattern = re.compile(r'==|<=|>=|LIKE|>|<|=')
+                                operator_pattern = re.compile(r"==|<=|>=|LIKE|>|<|=")
                                 operator_match = operator_pattern.search(condition)
                                 if operator_match:
                                     operator = operator_match.group(0)
@@ -91,8 +88,10 @@ class MySQLQueryParser:
                                 else:
                                     raise Exception("Enable to parse")
                         except Exception:
-                            raise Exception("The operator you are trying to use has not been implemented yet")
-                            
+                            raise Exception(
+                                "The operator you are trying to use has not been implemented yet"
+                            )
+
                         key = key.strip()
                         operator = operator.strip()
                         value = value.strip().strip("'")
@@ -147,7 +146,7 @@ class MySQLQueryParser:
     def extract_set_values(self, set_values_str):
         set_values = []
         # Split by 'AND', but not within quotes
-        pairs = re.findall(r'(?:[^\'AND]+|\'[^\']*\')+', set_values_str)
+        pairs = re.findall(r"(?:[^\'AND]+|\'[^\']*\')+", set_values_str)
         for pair in pairs:
             pair = pair.strip()
             if not pair:
@@ -158,22 +157,22 @@ class MySQLQueryParser:
             for i, char in enumerate(pair):
                 if char == "'":
                     in_quote = not in_quote
-                elif char == '=' and not in_quote:
+                elif char == "=" and not in_quote:
                     eq_pos = i
                     break
-            
+
             if eq_pos == -1:
                 continue
 
             key = pair[:eq_pos].strip()
-            value = pair[eq_pos+1:].strip().strip("'")
-            
+            value = pair[eq_pos + 1 :].strip().strip("'")
+
             # Handle numeric values
             if value.isdigit():
                 value = int(value)
-            elif value.replace('.', '', 1).isdigit():
+            elif value.replace(".", "", 1).isdigit():
                 value = float(value)
-            
+
             set_values.append({"key": key, "value": value})
         return set_values
 
@@ -193,7 +192,6 @@ class MySQLQueryParser:
         raise ValueError("Invalid SQL statement")
 
     def check_statement(self):
-
         if re.match(self.INSERT_PATTERN, self.statement):
             return True, "insert"
 
