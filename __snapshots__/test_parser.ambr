@@ -9,7 +9,7 @@
       expression=Literal(this='value1', is_string=True))),
   })
 # ---
-# name: test_sql_parser[INSERT INTO table (column1, column2) VALUES ('value1', 'value2')]
+# name: test_sql_parser[INSERT INTO table1 (column1, column2) VALUES ('value1', 'value2')]
   dict({
     'data': list([
       dict({
@@ -21,7 +21,7 @@
         'value': 'value2',
       }),
     ]),
-    'table_name': 'table',
+    'table_name': 'table1',
   })
 # ---
 # name: test_sql_parser[SELECT * FROM table]
