@@ -67,7 +67,7 @@ Before using this package, you'll need to set up a few things in your Notion wor
 
 - As of now, the `pynotiondb` package only supports `INSERT` and `SELECT` statements. It does not offer functionalities to create tables or add table headers directly from the package itself. Therefore, users must manually create the tables with appropriate headers in Notion before using the package.
 
-- Even if you mistakenly input an incorrect table name while executing SQL statements, the query will still execute successfully due to the databaseId being used when you do `mydb = NOTION_API("API_SECRET", "DATABASE_ID")`.
+- Even if you mistakenly input an incorrect table name while executing SQL statements, the query will still execute successfully due to the databaseId being used when you do `mydb = NotionAPI("API_SECRET", "DATABASE_ID")`.
 
 - Additional statements will be implemented in future updates of the package.
 
@@ -80,8 +80,8 @@ Before using this package, you'll need to set up a few things in your Notion wor
 ## 🚀Initialization
 
 ```python3
-from pynotiondb import NOTION_API
-mydb = NOTION_API("API_SECRET", "DATABASE_ID")
+from pynotiondb import NotionAPI
+mydb = NotionAPI("API_SECRET", "DATABASE_ID")
 ```
 
 ## <a id="insert"></a>➕ `INSERT` Statement

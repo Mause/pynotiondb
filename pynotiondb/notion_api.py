@@ -3,7 +3,7 @@ from .exceptions import NotionAPIError
 from .mysql_query_parser import MySQLQueryParser
 
 
-class NOTION_API:
+class NotionAPI:
     SEARCH = "https://api.notion.com/v1/search"
     PAGES = "https://api.notion.com/v1/pages"
     UPDATE_PAGE = "https://api.notion.com/v1/pages/{}"
