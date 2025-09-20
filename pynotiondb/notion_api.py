@@ -381,7 +381,9 @@ class NotionAPI:
         )
 
         select_statement_response = self.select(
-            "SELECT * from TEMP WHERE {}".format(parsed_data.get("where_clause"))
+            "SELECT * from {} WHERE {}".format(
+                parsed_data["table_name"], parsed_data.get("where_clause")
+            )
         )
 
         if not len(select_statement_response["data"]) >= 0:
@@ -405,7 +407,9 @@ class NotionAPI:
         parsed_data = MySQLQueryParser(query).parse()
 
         select_statement_response = self.select(
-            "SELECT * from TEMP WHERE {}".format(parsed_data.get("where_clause"))
+            "SELECT * from {} WHERE {}".format(
+                parsed_data["table_name"], parsed_data.get("where_clause")
+            )
         )
 
         if not len(select_statement_response["data"]) >= 0:
