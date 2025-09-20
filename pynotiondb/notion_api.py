@@ -344,7 +344,9 @@ class NotionAPI:
 
                 if prop_type and prop_type in prop_data:
                     if prop_type in ["title", "rich_text"]:
-                        prop_value = prop_data[prop_type][0].get("plain_text", "")
+                        prop_value = (prop_data[prop_type] or [{}])[0].get(
+                            "plain_text", ""
+                        )
 
                     elif prop_type == "URL":
                         prop_value = prop_data.get("url", None)
