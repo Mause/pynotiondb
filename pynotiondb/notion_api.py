@@ -407,7 +407,7 @@ class NotionAPI:
             )
 
     def execute(self, sql, val=None):
-        if val is not None and type(val) == list:
+        if val is not None and isinstance(val, list):
             query = sql
             to_execute_many = True
 
