@@ -28,7 +28,7 @@
   dict({
     'columns': None,
     'conditions': None,
-    'table': 'table',
+    'table_name': 'table',
   })
 # ---
 # name: test_sql_parser[SELECT column1, column2 FROM table WHERE column1 = 'value']
@@ -44,7 +44,7 @@
         'value': 'value',
       }),
     ]),
-    'table': 'table',
+    'table_name': 'table',
   })
 # ---
 # name: test_sql_parser[UPDATE table SET column1 = 'new_value' WHERE column2 = 'value2']
