@@ -23,15 +23,8 @@ class MySQLQueryParser:
         assert isinstance(self.statement, Insert)
         match: Insert = self.statement
 
-        breakpoint()
         table_name = match.this.this.this.this
-        if "expressions" in match.this.args:
-            prop_string = match.this.expressions
-        else:
-            prop_string = [
-                match.this.this.this,
-                *[join.this.this for join in match.this.this.args.get("joins")],
-            ]
+        prop_string = match.this.expressions
         values_string = match.expression.expressions[0].expressions
 
         properties = self._process_string(prop_string)
