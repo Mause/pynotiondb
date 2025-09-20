@@ -381,7 +381,7 @@ class NotionAPI:
         )
 
         select_statement_response = self.select(
-            "SELECT * from {} WHERE {}".format(
+            "SELECT * from {} {}".format(
                 parsed_data["table_name"], parsed_data.get("where_clause")
             )
         )
@@ -407,7 +407,7 @@ class NotionAPI:
         parsed_data = MySQLQueryParser(query).parse()
 
         select_statement_response = self.select(
-            "SELECT * from {} WHERE {}".format(
+            "SELECT * from {} {}".format(
                 parsed_data["table_name"], parsed_data.get("where_clause")
             )
         )
