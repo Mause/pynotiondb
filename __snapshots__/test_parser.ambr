@@ -56,10 +56,12 @@
       }),
     ]),
     'table_name': 'table',
-    'where_clause': Where(
-    this=EQ(
-      this=Column(
-        this=Identifier(this=column2, quoted=False)),
-      expression=Literal(this='value2', is_string=True))),
+    'where_clause': list([
+      dict({
+        'operator': 'EQ',
+        'parameter': 'column2',
+        'value': 'value2',
+      }),
+    ]),
   })
 # ---

@@ -67,7 +67,15 @@ class MySQLQueryParser:
         )
 
         conditions_str = match.args.get("where")
+        conditions = self.unwrap_where(conditions_str)
 
+        return {
+            "table": table_name,
+            "columns": columns,
+            "conditions": conditions if len(conditions) != 0 else None,
+        }
+
+    def unwrap_where(self, conditions_str) -> list[dict]:
         conditions = []
         if conditions_str:
             if isinstance(conditions_str.this, And):
@@ -75,12 +83,7 @@ class MySQLQueryParser:
                 conditions.append(self.parse_condition(conditions_str.this.expression))
             else:
                 conditions.append(self.parse_condition(conditions_str.this))
-
-        return {
-            "table": table_name,
-            "columns": columns,
-            "conditions": conditions if len(conditions) != 0 else None,
-        }
+        return conditions
 
     def parse_condition(self, op: Expression) -> dict:
         operator = type(op).__name__
@@ -107,7 +110,7 @@ class MySQLQueryParser:
         return {
             "table_name": table_name,
             "set_values": set_values,
-            "where_clause": where_clause,
+            "where_clause": self.unwrap_where(where_clause),
         }
 
     def extract_delete_statement_info(self) -> dict:
