@@ -210,7 +210,7 @@ class NotionAPI:
     def __generate_query(sql, val=None):
         if val is not None:
             query = sql.replace("%s", "'%s'")
-            query = sql % val
+            query = query % val
 
         else:
             query = sql
