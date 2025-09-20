@@ -104,8 +104,8 @@ class NotionAPI:
 
         return data
 
-    def get_table_header(self):
-        table_data = self.get_table_header_info()
+    def get_table_header(self, database_id: str):
+        table_data = self.get_table_header_info(database_id)
         return tuple(table_data.keys())
 
     def get_all_database_info(self, cursor=None, page_size=20):
@@ -270,7 +270,7 @@ class NotionAPI:
         property_names = (
             parsed_data.get("columns", None)
             if parsed_data.get("columns")
-            else self.get_table_header()
+            else self.get_table_header(database_id)
         )
 
         results = {
