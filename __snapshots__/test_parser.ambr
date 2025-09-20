@@ -31,6 +31,24 @@
     'table': 'table',
   })
 # ---
+# name: test_sql_parser[SELECT column1, column2 FROM table WHERE column1 = 'value']
+  dict({
+    'columns': list([
+      Column(
+    this=Identifier(this=column1, quoted=False)),
+      Column(
+    this=Identifier(this=column2, quoted=False)),
+    ]),
+    'conditions': list([
+      dict({
+        'operator': 'EQ',
+        'parameter': 'column1',
+        'value': 'value',
+      }),
+    ]),
+    'table': 'table',
+  })
+# ---
 # name: test_sql_parser[UPDATE table SET column1 = 'new_value' WHERE column2 = 'value2']
   dict({
     'set_values': list([

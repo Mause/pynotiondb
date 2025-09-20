@@ -6,7 +6,7 @@ from pynotiondb.mysql_query_parser import MySQLQueryParser
     "sql",
     [
         "SELECT * FROM table",
-        # "SELECT column1, column2 FROM table WHERE column1 = 'value'",
+        "SELECT column1, column2 FROM table WHERE column1 = 'value'",
         "INSERT INTO table1 (column1, column2) VALUES ('value1', 'value2')",
         "UPDATE table SET column1 = 'new_value' WHERE column2 = 'value2'",
         "DELETE FROM table WHERE column1 = 'value1';",
