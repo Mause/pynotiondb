@@ -70,7 +70,7 @@ class MySQLQueryParser:
         conditions = self.unwrap_where(conditions_str)
 
         return {
-            "table": table_name,
+            "table_name": table_name,
             "columns": columns,
             "conditions": conditions if len(conditions) != 0 else None,
         }
