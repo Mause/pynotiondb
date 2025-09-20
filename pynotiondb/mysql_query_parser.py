@@ -59,7 +59,12 @@ class MySQLQueryParser:
 
         table_name = match.args.get("from").this.this.this
 
-        columns = match.expressions
+        exprs = match.expressions
+        columns = (
+            None
+            if len(exprs) == 1 and isinstance(exprs[0], Star)
+            else [res.this for res in self._process_string(match.expressions) if res]
+        )
 
         conditions_str = match.args.get("where")
 
@@ -73,9 +78,7 @@ class MySQLQueryParser:
 
         return {
             "table": table_name,
-            "columns": None
-            if len(columns) == 1 and isinstance(columns[0], Star)
-            else columns,
+            "columns": columns,
             "conditions": conditions if len(conditions) != 0 else None,
         }
 
