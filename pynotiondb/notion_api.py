@@ -11,6 +11,8 @@ class NotionAPI:
     DATABASES = "https://api.notion.com/v1/databases/{}"
     QUERY_DATABASE = "https://api.notion.com/v1/databases/{}/query"
     DEFAULT_PAGE_SIZE_FOR_SELECT_STATEMENTS = 20
+    token: str
+    databases: dict[str, str]
 
     CONDITION_MAPPING = {
         "EQ": "equals",
@@ -20,8 +22,9 @@ class NotionAPI:
         ">=": "greater_than_or_equal_to",
     }
 
-    def __init__(self, token: str) -> None:
+    def __init__(self, token: str, databases: dict[str, str]) -> None:
         self.token = token
+        self.databases = databases
         self.DEFAULT_NOTION_VERSION = "2022-06-28"
         self.AUTHORIZATION = "Bearer " + self.token
         self.headers = {
@@ -217,7 +220,7 @@ class NotionAPI:
     def insert(self, query: str) -> None:
         parsed_data = MySQLQueryParser(query).parse()
 
-        database_id = parsed_data["table_name"]
+        database_id = self.databases[parsed_data["table_name"]]
 
         table_header = self.get_table_header_info(database_id)
 
@@ -235,7 +238,7 @@ class NotionAPI:
             query = self.__generate_query(sql, row)
 
             parsed_data = MySQLQueryParser(query).parse()
-            database_id = parsed_data["table_name"]
+            database_id = self.databases[parsed_data["table_name"]]
             table_header = self.get_table_header_info(database_id)
             parsed_data = self.__add_name_and_id_to_parsed_data_for_insert_statements(
                 parsed_data, table_header
@@ -249,10 +252,11 @@ class NotionAPI:
         return results
 
     def select(self, query):
-        table_header = self.get_table_header_info()
         parsed_data = MySQLQueryParser(query).parse()
 
-        database_id = parsed_data["table_name"]
+        database_id = self.databases[parsed_data["table_name"]]
+
+        table_header = self.get_table_header_info(database_id)
 
         # We will need to add title, rich_text or number acc to the type of the property in the parsed_data which is parsed from the SELECT statement.
         # We only need to add name and id if there are condition in the statement
@@ -366,7 +370,7 @@ class NotionAPI:
 
     def update(self, query) -> None:
         parsed_data = MySQLQueryParser(query).parse()
-        database_id = parsed_data["table_name"]
+        database_id = self.databases[parsed_data["table_name"]]
 
         table_header = self.get_table_header_info(database_id)
 
