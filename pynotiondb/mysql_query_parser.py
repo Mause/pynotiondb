@@ -119,7 +119,7 @@ class MySQLQueryParser:
         table_name = match.this.this.this
         where_clause = match.args.get("where")
 
-        return {"table_name": table_name, "where_clause": where_clause}
+        return {"table_name": table_name, "where_clause": where_clause.this}
 
     def extract_set_values(self, set_values_str: list[EQ]) -> list[dict]:
         set_values = []
