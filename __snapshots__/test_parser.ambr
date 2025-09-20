@@ -1,0 +1,41 @@
+# serializer version: 1
+# name: test_sql_parser[DELETE FROM table WHERE column1 = 'value1';]
+  dict({
+    'table_name': 'table',
+    'where_clause': "column1 = 'value1';",
+  })
+# ---
+# name: test_sql_parser[INSERT INTO table (column1, column2) VALUES ('value1', 'value2')]
+  dict({
+    'data': list([
+      dict({
+        'property': 'column1',
+        'value': 'value1',
+      }),
+      dict({
+        'property': 'column2',
+        'value': 'value2',
+      }),
+    ]),
+    'table_name': 'table',
+  })
+# ---
+# name: test_sql_parser[SELECT * FROM table]
+  dict({
+    'columns': None,
+    'conditions': None,
+    'table': 'table',
+  })
+# ---
+# name: test_sql_parser[UPDATE table SET column1 = 'new_value' WHERE column2 = 'value2']
+  dict({
+    'set_values': list([
+      dict({
+        'key': 'column1',
+        'value': 'new_value',
+      }),
+    ]),
+    'table_name': 'table',
+    'where_clause': "column2 = 'value2'",
+  })
+# ---

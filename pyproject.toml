@@ -23,3 +23,9 @@ Tracker = "https://github.com/aditya76-git/pynotiondb/issues"
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
+
+[dependency-groups]
+dev = [
+    "pytest>=7.0.1",
+    "syrupy>=2.3.1",
+]
