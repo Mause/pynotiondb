@@ -166,9 +166,10 @@ class NotionAPI:
         parsed_data, table_header
     ):
         for item in parsed_data["data"]:
-            if item.get("property") in table_header:
-                item["name"] = table_header[item.get("property")]["name"]
-                item["id"] = table_header[item.get("property")]["id"]
+            property = item["property"]
+            assert property in table_header
+            item["name"] = table_header[property]["name"]
+            item["id"] = table_header[property]["id"]
 
         return parsed_data
 
