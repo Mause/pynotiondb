@@ -1,6 +1,11 @@
+import logging
+
 import requests
+
 from .exceptions import NotionAPIError
 from .mysql_query_parser import MySQLQueryParser
+
+logger = logging.getLogger(__name__)
 
 
 class NotionAPI:
@@ -87,6 +92,8 @@ class NotionAPI:
                 json_data["properties"][data.get("property")] = {
                     "url": str(data.get("value"))
                 }
+            else:
+                logger.warn("Unsupported property type: %s", name)
 
         return json_data
 
