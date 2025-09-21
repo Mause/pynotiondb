@@ -3,6 +3,8 @@ from sqlglot.expressions import (
     EQ,
     And,
     Delete,
+    Or,
+    Where,
     Expression,
     Insert,
     Select,
@@ -67,25 +69,35 @@ class MySQLQueryParser:
         )
 
         conditions_str = match.args.get("where")
-        conditions = self.unwrap_where(conditions_str)
+        conditions = self.unwrap_where(conditions_str.this)
 
         return {
             "table_name": table_name,
             "columns": columns,
-            "conditions": conditions if len(conditions) != 0 else None,
+            "conditions": [conditions],  # if len(conditions) != 0 else None,
         }
 
-    def unwrap_where(self, conditions_str) -> list[dict]:
-        conditions = []
-        if conditions_str:
-            if isinstance(conditions_str.this, And):
-                conditions.append(self.parse_condition(conditions_str.this.this))
-                conditions.append(self.parse_condition(conditions_str.this.expression))
-            else:
-                conditions.append(self.parse_condition(conditions_str.this))
-        return conditions
+    def unwrap_where(self, conditions_str) -> dict:
+        assert not isinstance(conditions_str, Where)
+        if isinstance(conditions_str, And):
+            return {
+                "and": [
+                    self.unwrap_where(conditions_str.this),
+                    self.unwrap_where(conditions_str.expression),
+                ]
+            }
+        elif isinstance(conditions_str, Or):
+            return {
+                "or": [
+                    self.unwrap_where(conditions_str.this),
+                    self.unwrap_where(conditions_str.expression),
+                ]
+            }
+        else:
+            return self.parse_condition(conditions_str)
 
     def parse_condition(self, op: Expression) -> dict:
+        breakpoint()
         operator = type(op).__name__
         key = op.this.this.this
         value = op.expression.this
@@ -110,7 +122,7 @@ class MySQLQueryParser:
         return {
             "table_name": table_name,
             "set_values": set_values,
-            "where_clause": self.unwrap_where(where_clause),
+            "where_clause": [self.unwrap_where(where_clause.this)],
         }
 
     def extract_delete_statement_info(self) -> dict:
