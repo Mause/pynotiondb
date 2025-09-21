@@ -3,13 +3,13 @@ from sqlglot.expressions import (
     EQ,
     And,
     Delete,
-    Or,
-    Where,
     Expression,
     Insert,
+    Or,
     Select,
     Star,
     Update,
+    Where,
 )
 
 

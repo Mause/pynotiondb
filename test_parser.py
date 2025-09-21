@@ -1,4 +1,5 @@
 from pytest import mark
+
 from pynotiondb.mysql_query_parser import MySQLQueryParser
 
 

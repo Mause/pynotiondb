@@ -21,13 +21,17 @@ dependencies = [
 Homepage = "https://github.com/aditya76-git/pynotiondb"
 Tracker = "https://github.com/aditya76-git/pynotiondb/issues"
 
+[dependency-groups]
+dev = [
+  "pdbpp>=0.10.3",
+  "pytest>=7.0.1",
+  "syrupy>=2.3.1",
+]
+
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
 
-[dependency-groups]
-dev = [
-    "pdbpp>=0.10.3",
-    "pytest>=7.0.1",
-    "syrupy>=2.3.1",
-]
+[tool.ruff.lint]
+select = ["I"]
+
