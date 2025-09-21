@@ -65,12 +65,13 @@ class NotionAPI:
         json_data = {"parent": {"database_id": database_id}, "properties": {}}
 
         for data in properties_data["data"]:
-            if data.get("name") == "number":
+            name = data["name"]
+            if name == "number":
                 json_data["properties"][data.get("property")] = {
                     "number": int(data.get("value"))
                 }
 
-            elif data.get("name") in ["title", "rich_text"]:
+            elif name in ["title", "rich_text"]:
                 json_data["properties"][data.get("property")] = {
                     data.get("name"): [
                         {
@@ -81,6 +82,10 @@ class NotionAPI:
                             "plain_text": str(data.get("value")),
                         }
                     ]
+                }
+            elif name == "url":
+                json_data["properties"][data.get("property")] = {
+                    "url": str(data.get("value"))
                 }
 
         return json_data
