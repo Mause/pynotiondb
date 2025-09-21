@@ -173,6 +173,7 @@ class NotionAPI:
     ):
         for condition in parsed_data.get("conditions", []):
             parameter = condition.get("parameter")
+            assert parameter in table_header
             if parameter in table_header:
                 condition["name"] = table_header[parameter]["name"]
                 condition["id"] = table_header[parameter]["id"]
@@ -311,19 +312,21 @@ class NotionAPI:
 
                 if condition.get("operator") == "LIKE":
                     filter = {
-                        "property": condition.get("parameter"),
-                        "title": {"contains": condition.get("value")},
+                        "property": condition["parameter"],
+                        "title": {"contains": condition["value"]},
                     }
 
                 else:
+                    print(condition)
                     filter = {
-                        "property": condition.get("parameter"),
-                        condition.get("name"): {
-                            self.CONDITION_MAPPING[
-                                condition.get("operator")
-                            ]: condition.get("value")
+                        "property": condition["parameter"],
+                        condition["name"]: {
+                            self.CONDITION_MAPPING[condition["operator"]]: condition[
+                                "value"
+                            ]
                         },
                     }
+                    print(filter)
 
                 payload["filter"]["and"].append(filter)
 
@@ -348,7 +351,7 @@ class NotionAPI:
                             "plain_text", ""
                         )
 
-                    elif prop_type == "URL":
+                    elif prop_type == "url":
                         prop_value = prop_data.get("url", None)
                     elif prop_type == "number":
                         prop_value = prop_data.get("number", None)
