@@ -97,7 +97,6 @@ class MySQLQueryParser:
             return self.parse_condition(conditions_str)
 
     def parse_condition(self, op: Expression) -> dict:
-        breakpoint()
         operator = type(op).__name__
         key = op.this.this.this
         value = op.expression.this
