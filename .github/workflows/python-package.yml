@@ -11,6 +11,9 @@ on:
 env:
   FORCE_COLOR: 1
 
+env:
+  FORCE_COLOR: 1
+
 jobs:
   build:
     runs-on: ubuntu-latest
