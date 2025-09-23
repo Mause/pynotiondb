@@ -62,6 +62,13 @@
     'table_name': 'table1',
   })
 # ---
+# name: test_sql_parser[SELECT *, agg_list(column) FROM table GROUP BY column2 LIMIT 10 OFFSET 5;]
+  dict({
+    'columns': None,
+    'conditions': None,
+    'table_name': 'table',
+  })
+# ---
 # name: test_sql_parser[SELECT column1, column2 FROM table1 WHERE column1 = 'value']
   dict({
     'columns': list([

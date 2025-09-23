@@ -66,7 +66,7 @@ class MySQLQueryParser:
         exprs = match.expressions
         columns = (
             None
-            if len(exprs) == 1 and isinstance(exprs[0], Star)
+            if match.is_star
             else [res.this for res in self._process_string(match.expressions) if res]
         )
 
