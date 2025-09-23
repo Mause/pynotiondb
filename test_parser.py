@@ -12,6 +12,7 @@ from pynotiondb.mysql_query_parser import MySQLQueryParser
         "UPDATE table SET column1 = 'new_value' WHERE column2 = 'value2'",
         "DELETE FROM table1 WHERE column1 = 'value1';",
         "SELECT * FROM table1 WHERE column1=1 AND column2='text' OR column3 IS NULL;",
+        "SELECT *, agg_list(column) FROM table GROUP BY column2 LIMIT 10 OFFSET 5;",
     ],
 )
 def test_sql_parser(sql: str, snapshot):
