@@ -2,9 +2,11 @@ from sqlglot import parse
 from sqlglot.expressions import (
     EQ,
     And,
+    Binary,
     Delete,
     Expression,
     Insert,
+    Null,
     Or,
     Select,
     Star,
@@ -94,17 +96,24 @@ class MySQLQueryParser:
         else:
             return self.parse_condition(conditions_str)
 
-    def parse_condition(self, op: Expression) -> dict:
+    def parse_condition(self, op: Binary) -> dict:
         operator = type(op).__name__
-        key = op.this.this.this
-        value = op.expression.this
+        key = op.left.text("this")
+        value = op.right
 
-        key = key.strip()
-        operator = operator.strip()
+        if value.is_int and value.is_number:
+            value = value.to_py()
+        elif value.is_string:
+            value = value.this
+        elif isinstance(value, Null):
+            value = None
+        else:
+            raise ValueError("Unsupported value type")
+
         return {
             "parameter": key,
             "operator": operator,
-            "value": int(value) if value.isdigit() else value,
+            "value": value,
         }
 
     def extract_update_statement_info(self) -> dict:
