@@ -69,13 +69,11 @@ class MySQLQueryParser:
         )
 
         conditions_str = match.args.get("where")
-        conditions = self.unwrap_where(conditions_str.this)
+        conditions = (
+            [self.unwrap_where(conditions_str.this)] if conditions_str else None
+        )
 
-        return {
-            "table_name": table_name,
-            "columns": columns,
-            "conditions": [conditions],  # if len(conditions) != 0 else None,
-        }
+        return {"table_name": table_name, "columns": columns, "conditions": conditions}
 
     def unwrap_where(self, conditions_str) -> dict:
         assert not isinstance(conditions_str, Where)
