@@ -21,3 +21,11 @@ def test_sql_parser(sql: str, snapshot):
     assert ok
 
     snapshot.assert_match(parser.parse())
+
+
+def test_create(snapshot):
+    parser = MySQLQueryParser("CREATE TABLE table1 (id int);")
+    ok, typ = parser.check_statement()
+    assert ok
+
+    snapshot.assert_match(parser.parse())
