@@ -1,0 +1,105 @@
+# serializer version: 1
+# name: test_sql_parser[DELETE FROM table1 WHERE column1 = 'value1';]
+  dict({
+    'table_name': 'table1',
+    'where_clause': Where(
+    this=EQ(
+      this=Column(
+        this=Identifier(this=column1, quoted=False)),
+      expression=Literal(this='value1', is_string=True))),
+  })
+# ---
+# name: test_sql_parser[INSERT INTO table1 (column1, column2) VALUES ('value1', 'value2')]
+  dict({
+    'data': list([
+      dict({
+        'property': 'column1',
+        'value': 'value1',
+      }),
+      dict({
+        'property': 'column2',
+        'value': 'value2',
+      }),
+    ]),
+    'table_name': 'table1',
+  })
+# ---
+# name: test_sql_parser[SELECT * FROM table1 WHERE column1=1 AND column2='text' OR column3 IS NULL;]
+  dict({
+    'columns': None,
+    'conditions': list([
+      dict({
+        'or': list([
+          dict({
+            'and': list([
+              dict({
+                'operator': 'EQ',
+                'parameter': 'column1',
+                'value': 1,
+              }),
+              dict({
+                'operator': 'EQ',
+                'parameter': 'column2',
+                'value': 'text',
+              }),
+            ]),
+          }),
+          dict({
+            'operator': 'Is',
+            'parameter': 'column3',
+            'value': None,
+          }),
+        ]),
+      }),
+    ]),
+    'table_name': 'table1',
+  })
+# ---
+# name: test_sql_parser[SELECT * FROM table1]
+  dict({
+    'columns': None,
+    'conditions': None,
+    'table_name': 'table1',
+  })
+# ---
+# name: test_sql_parser[SELECT *, agg_list(column) FROM table GROUP BY column2 LIMIT 10 OFFSET 5;]
+  dict({
+    'columns': None,
+    'conditions': None,
+    'table_name': 'table',
+  })
+# ---
+# name: test_sql_parser[SELECT column1, column2 FROM table1 WHERE column1 = 'value']
+  dict({
+    'columns': list([
+      'column1',
+      'column2',
+    ]),
+    'conditions': list([
+      dict({
+        'operator': 'EQ',
+        'parameter': 'column1',
+        'value': 'value',
+      }),
+    ]),
+    'table_name': 'table1',
+  })
+# ---
+# name: test_sql_parser[UPDATE table SET column1 = 'new_value' WHERE column2 = 'value2']
+  dict({
+    'set_values': list([
+      dict({
+        'key': 'column1',
+        'value': 'new_value',
+      }),
+    ]),
+    'table_name': 'table',
+    'where_clause': list([
+      dict({
+        'operator': 'EQ',
+        'parameter': 'column2',
+        'value': 'value2',
+      }),
+    ]),
+  })
+# ---

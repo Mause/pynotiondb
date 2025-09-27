@@ -1,1 +1,1 @@
-from .notion_api import NOTION_API
+from .notion_api import NotionAPI as NotionAPI
