@@ -13,6 +13,7 @@ classifiers = [
   "Programming Language :: Python :: 3",
 ]
 dependencies = [
+  "notion-client>=2.5.0",
   "requests>=2.0.0",
   "sqlglot>=18.2.0",
 ]

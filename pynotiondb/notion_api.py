@@ -1,11 +1,19 @@
 import logging
 
 import requests
+from notion_client import Client
 
 from .exceptions import NotionAPIError
 from .mysql_query_parser import MySQLQueryParser
 
 logger = logging.getLogger(__name__)
+
+
+def format_type(s: str):
+    if s == "INT":
+        return {}
+    else:
+        raise Exception(s)
 
 
 class NotionAPI:
@@ -39,6 +47,7 @@ class NotionAPI:
         }
         self.session = requests.Session()
         self.session.headers.update(self.headers)
+        self.client = Client(auth=token)
 
     def request_helper(self, url: str, method: str = "GET", payload=None):
         response = self.session.request(method, url, json=payload)
@@ -419,6 +428,16 @@ class NotionAPI:
                 payload=payload,
             )
 
+    def create(self, query: str) -> None:
+        parsed_data = MySQLQueryParser(query).parse()
+
+        return self.client.databases.create(
+            title=parsed_data["table_name"],
+            properties={
+                col: format_type(typ) for col, typ in parsed_data["columns"].items()
+            },
+        )
+
     def delete(self, query) -> None:
         parsed_data = MySQLQueryParser(query).parse()
 
@@ -467,6 +486,9 @@ class NotionAPI:
 
             elif to_do == "delete":
                 self.delete(query)
+
+            elif to_do == "create":
+                return self.create(query)
 
             else:
                 raise ValueError("Unsupported operation")
