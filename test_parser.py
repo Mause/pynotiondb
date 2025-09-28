@@ -27,7 +27,7 @@ def test_sql_parser(sql: str, snapshot):
     snapshot.assert_match(parser.parse())
 
 
-create_sql = "CREATE TABLE table1 (id int);"
+create_sql = "CREATE TABLE table1 (title title, id int);"
 
 
 def test_create(snapshot):

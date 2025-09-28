@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 def format_type(s: str):
     if s == "INT":
         return {}
+    elif s == "title":
+        return {}
     else:
         raise Exception(s)
 
@@ -430,12 +432,10 @@ class NotionAPI:
 
     def create(self, query: str) -> None:
         parsed_data = MySQLQueryParser(query).parse()
-
+        props = {col: format_type(typ) for col, typ in parsed_data["columns"].items()}
         return self.client.databases.create(
-            title=parsed_data["table_name"],
-            properties={
-                col: format_type(typ) for col, typ in parsed_data["columns"].items()
-            },
+            title=[{"text": {"content": parsed_data["table_name"]}}],
+            properties=props,
         )
 
     def delete(self, query) -> None:

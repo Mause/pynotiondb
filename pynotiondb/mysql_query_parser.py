@@ -134,7 +134,10 @@ class MySQLQueryParser:
         schema = match.this
 
         table_name = schema.this.text("this")
-        columns = {col.text("this"): col.kind.this.value for col in schema.expressions}
+        columns = {
+            col.text("this"): col.kind.args.get("kind", col.kind.this.value)
+            for col in schema.expressions
+        }
 
         return {"table_name": table_name, "columns": columns}
 

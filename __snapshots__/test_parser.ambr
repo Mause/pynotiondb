@@ -3,6 +3,7 @@
   dict({
     'columns': dict({
       'id': 'INT',
+      'title': 'title',
     }),
     'table_name': 'table1',
   })
