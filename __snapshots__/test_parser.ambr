@@ -22,12 +22,13 @@
     ]),
   })
 # ---
-# name: test_sql_parser[CREATE TABLE table1 (title title, id int);]
+# name: test_sql_parser[CREATE TABLE IF NOT EXISTS table1 (title title, id int);]
   dict({
     'columns': dict({
       'id': 'INT',
       'title': 'title',
     }),
+    'exists': True,
     'table_name': 'table1',
   })
 # ---

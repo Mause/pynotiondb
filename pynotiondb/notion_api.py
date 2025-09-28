@@ -1,4 +1,5 @@
 import logging
+from functools import lru_cache
 
 import requests
 from notion_client import Client
@@ -29,7 +30,6 @@ class NotionAPI:
     QUERY_DATABASE = "https://api.notion.com/v1/databases/{}/query"
     DEFAULT_PAGE_SIZE_FOR_SELECT_STATEMENTS = 20
     token: str
-    databases: dict[str, str]
     table_parent_page: str | None
 
     CONDITION_MAPPING = {
@@ -43,12 +43,10 @@ class NotionAPI:
     def __init__(
         self,
         token: str,
-        databases: dict[str, str],
         *,
         table_parent_page: str | None = None,
     ) -> None:
         self.token = token
-        self.databases = databases
         self.table_parent_page = table_parent_page
         self.DEFAULT_NOTION_VERSION = "2022-06-28"
         self.AUTHORIZATION = "Bearer " + self.token
@@ -182,6 +180,11 @@ class NotionAPI:
         data["previous_cursor"] = dbs_info.get("previous_cursor")
 
         return data
+
+    @property
+    @lru_cache()
+    def databases(self):
+        return {db["title"]: db["id"] for db in self.get_all_database_info()["results"]}
 
     def get_all_database(self):
         dbs = self.get_all_database_info()

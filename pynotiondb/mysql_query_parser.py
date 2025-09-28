@@ -131,6 +131,7 @@ class MySQLQueryParser:
 
     def extract_create_statement_info(self) -> dict:
         match: Create = self.statement
+        assert match.kind == "TABLE"
         schema = match.this
 
         table_name = schema.this.text("this")
@@ -139,7 +140,11 @@ class MySQLQueryParser:
             for col in schema.expressions
         }
 
-        return {"table_name": table_name, "columns": columns}
+        return {
+            "table_name": table_name,
+            "columns": columns,
+            "exists": match.args.get("exists", False),
+        }
 
     def extract_set_values(self, set_values_str: list[EQ]) -> list[dict]:
         set_values = []
