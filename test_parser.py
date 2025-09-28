@@ -6,6 +6,8 @@ from respx import MockRouter
 from pynotiondb import NotionAPI
 from pynotiondb.mysql_query_parser import MySQLQueryParser
 
+create_sql = "CREATE TABLE table1 (title title, id int);"
+
 
 @mark.parametrize(
     "sql",
@@ -17,21 +19,11 @@ from pynotiondb.mysql_query_parser import MySQLQueryParser
         "DELETE FROM table1 WHERE column1 = 'value1';",
         "SELECT * FROM table1 WHERE column1=1 AND column2='text' OR column3 IS NULL;",
         "SELECT *, agg_list(column) FROM table GROUP BY column2 LIMIT 10 OFFSET 5;",
+        create_sql,
     ],
 )
 def test_sql_parser(sql: str, snapshot):
     parser = MySQLQueryParser(sql)
-    ok, typ = parser.check_statement()
-    assert ok
-
-    snapshot.assert_match(parser.parse())
-
-
-create_sql = "CREATE TABLE table1 (title title, id int);"
-
-
-def test_create(snapshot):
-    parser = MySQLQueryParser(create_sql)
     ok, typ = parser.check_statement()
     assert ok
 

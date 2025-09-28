@@ -1,5 +1,25 @@
 # serializer version: 1
-# name: test_create
+# name: test_notion
+  dict({
+    'properties': dict({
+      'id': dict({
+        'number': True,
+      }),
+      'title': dict({
+        'title': dict({
+        }),
+      }),
+    }),
+    'title': list([
+      dict({
+        'text': dict({
+          'content': 'table1',
+        }),
+      }),
+    ]),
+  })
+# ---
+# name: test_sql_parser[CREATE TABLE table1 (title title, id int);]
   dict({
     'columns': dict({
       'id': 'INT',
