@@ -9,11 +9,13 @@ from .mysql_query_parser import MySQLQueryParser
 logger = logging.getLogger(__name__)
 
 
-def format_type(s: str):
+def format_type(s: str) -> dict:
     if s == "INT":
-        return {}
+        return {"number": True}
+    elif s == "VARCHAR":
+        return {"rich_text": {}}
     elif s == "title":
-        return {}
+        return {"title": {}}
     else:
         raise Exception(s)
 
