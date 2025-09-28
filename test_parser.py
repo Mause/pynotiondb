@@ -1,5 +1,9 @@
-from pytest import mark
+import json
 
+from pytest import mark
+from respx import MockRouter
+
+from pynotiondb import NotionAPI
 from pynotiondb.mysql_query_parser import MySQLQueryParser
 
 
@@ -23,9 +27,22 @@ def test_sql_parser(sql: str, snapshot):
     snapshot.assert_match(parser.parse())
 
 
+create_sql = "CREATE TABLE table1 (id int);"
+
+
 def test_create(snapshot):
-    parser = MySQLQueryParser("CREATE TABLE table1 (id int);")
+    parser = MySQLQueryParser(create_sql)
     ok, typ = parser.check_statement()
     assert ok
 
     snapshot.assert_match(parser.parse())
+
+
+def test_notion(snapshot):
+    with MockRouter(base_url="https://api.notion.com/v1") as req:
+        call = req.post("/databases").respond(200, json={})
+        notion = NotionAPI("", {"table1": "table1"})
+        notion.execute(create_sql)
+
+        assert call.called
+        assert snapshot == json.loads(req.calls.last.request.content)
