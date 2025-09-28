@@ -33,7 +33,7 @@ def test_sql_parser(sql: str, snapshot):
 def test_notion(snapshot):
     with MockRouter(base_url="https://api.notion.com/v1") as req:
         call = req.post("/databases").respond(200, json={})
-        notion = NotionAPI("", {"table1": "table1"})
+        notion = NotionAPI("", {"table1": "table1"}, table_parent_page="PARENT_PAGE")
         notion.execute(create_sql)
 
         assert call.called

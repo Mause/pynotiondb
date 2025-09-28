@@ -1,6 +1,9 @@
 # serializer version: 1
 # name: test_notion
   dict({
+    'parent': dict({
+      'database_id': 'PARENT_PAGE',
+    }),
     'properties': dict({
       'id': dict({
         'number': True,

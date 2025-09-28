@@ -30,6 +30,7 @@ class NotionAPI:
     DEFAULT_PAGE_SIZE_FOR_SELECT_STATEMENTS = 20
     token: str
     databases: dict[str, str]
+    table_parent_page: str | None
 
     CONDITION_MAPPING = {
         "EQ": "equals",
@@ -39,9 +40,16 @@ class NotionAPI:
         ">=": "greater_than_or_equal_to",
     }
 
-    def __init__(self, token: str, databases: dict[str, str]) -> None:
+    def __init__(
+        self,
+        token: str,
+        databases: dict[str, str],
+        *,
+        table_parent_page: str | None = None,
+    ) -> None:
         self.token = token
         self.databases = databases
+        self.table_parent_page = table_parent_page
         self.DEFAULT_NOTION_VERSION = "2022-06-28"
         self.AUTHORIZATION = "Bearer " + self.token
         self.headers = {
@@ -433,10 +441,13 @@ class NotionAPI:
             )
 
     def create(self, query: str) -> None:
+        if not self.table_parent_page:
+            raise Exception("Parent for new tables must be specified")
         parsed_data = MySQLQueryParser(query).parse()
         props = {col: format_type(typ) for col, typ in parsed_data["columns"].items()}
         return self.client.databases.create(
             title=[{"text": {"content": parsed_data["table_name"]}}],
+            parent={"database_id": self.table_parent_page},
             properties=props,
         )
 
