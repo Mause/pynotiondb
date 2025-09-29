@@ -1,0 +1,13 @@
+LICENSE
+README.md
+pyproject.toml
+setup.py
+pynotiondb/__init__.py
+pynotiondb/exceptions.py
+pynotiondb/mysql_query_parser.py
+pynotiondb/notion_api.py
+pynotiondb.egg-info/PKG-INFO
+pynotiondb.egg-info/SOURCES.txt
+pynotiondb.egg-info/dependency_links.txt
+pynotiondb.egg-info/requires.txt
+pynotiondb.egg-info/top_level.txt
