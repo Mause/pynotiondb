@@ -3,7 +3,7 @@ name = "pynotiondb"
 version = "0.1.0"
 description = "A Python wrapper for interacting with Notion databases using SQL-style syntax"
 readme = "README.md"
-requires-python = ">=3.6"
+requires-python = ">=3.8"
 authors = [
   { name = "aditya76-git", email = "cdr.aditya.76@gmail.com" },
 ]
@@ -14,12 +14,24 @@ classifiers = [
 ]
 dependencies = [
   "requests>=2.0.0",
+  "sqlglot>=18.2.0",
 ]
 
 [project.urls]
 Homepage = "https://github.com/aditya76-git/pynotiondb"
 Tracker = "https://github.com/aditya76-git/pynotiondb/issues"
 
+[dependency-groups]
+dev = [
+  "pdbpp>=0.10.3",
+  "pytest>=7.0.1",
+  "syrupy>=2.3.1",
+]
+
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
+
+[tool.ruff.lint]
+select = ["I"]
+

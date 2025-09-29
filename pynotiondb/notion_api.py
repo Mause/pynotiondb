@@ -1,9 +1,14 @@
+import logging
+
 import requests
+
 from .exceptions import NotionAPIError
 from .mysql_query_parser import MySQLQueryParser
 
+logger = logging.getLogger(__name__)
 
-class NOTION_API:
+
+class NotionAPI:
     SEARCH = "https://api.notion.com/v1/search"
     PAGES = "https://api.notion.com/v1/pages"
     UPDATE_PAGE = "https://api.notion.com/v1/pages/{}"
@@ -11,19 +16,20 @@ class NOTION_API:
     DATABASES = "https://api.notion.com/v1/databases/{}"
     QUERY_DATABASE = "https://api.notion.com/v1/databases/{}/query"
     DEFAULT_PAGE_SIZE_FOR_SELECT_STATEMENTS = 20
+    token: str
+    databases: dict[str, str]
 
     CONDITION_MAPPING = {
-        "=": "equals",
-        ">": "greater_than",
-        "<": "less_than",
+        "EQ": "equals",
+        "GT": "greater_than",
+        "LT": "less_than",
         "<=": "less_than_or_equal_to",
         ">=": "greater_than_or_equal_to",
-        "==": "equals",
     }
 
-    def __init__(self, token, databaseId):
+    def __init__(self, token: str, databases: dict[str, str]) -> None:
         self.token = token
-        self.databaseId = databaseId
+        self.databases = databases
         self.DEFAULT_NOTION_VERSION = "2022-06-28"
         self.AUTHORIZATION = "Bearer " + self.token
         self.headers = {
@@ -34,7 +40,7 @@ class NOTION_API:
         self.session = requests.Session()
         self.session.headers.update(self.headers)
 
-    def request_helper(self, url, method="GET", payload=None):
+    def request_helper(self, url: str, method: str = "GET", payload=None):
         response = self.session.request(method, url, json=payload)
         # response.raise_for_status()
         response = self.get_json(response)
@@ -58,16 +64,19 @@ class NOTION_API:
         else:
             return response
 
-    def construct_payload_for_pages_creation(self, properties_data):
-        json_data = {"parent": {"database_id": self.databaseId}, "properties": {}}
+    def construct_payload_for_pages_creation(
+        self, database_id: str, properties_data: dict
+    ):
+        json_data = {"parent": {"database_id": database_id}, "properties": {}}
 
         for data in properties_data["data"]:
-            if data.get("name") == "number":
+            name = data["name"]
+            if name == "number":
                 json_data["properties"][data.get("property")] = {
                     "number": int(data.get("value"))
                 }
 
-            elif data.get("name") in ["title", "rich_text"]:
+            elif name in ["title", "rich_text"]:
                 json_data["properties"][data.get("property")] = {
                     data.get("name"): [
                         {
@@ -79,12 +88,18 @@ class NOTION_API:
                         }
                     ]
                 }
+            elif name == "url":
+                json_data["properties"][data.get("property")] = {
+                    "url": str(data.get("value"))
+                }
+            else:
+                logger.warn("Unsupported property type: %s", name)
 
         return json_data
 
-    def get_table_header_info(self):
+    def get_table_header_info(self, database_id: str):
         response = self.request_helper(
-            url=self.DATABASES.format(self.databaseId), method="GET"
+            url=self.DATABASES.format(database_id), method="GET"
         )
 
         database_info = response.json()
@@ -101,8 +116,8 @@ class NOTION_API:
 
         return data
 
-    def get_table_header(self):
-        table_data = self.get_table_header_info()
+    def get_table_header(self, database_id: str):
+        table_data = self.get_table_header_info(database_id)
         return tuple(table_data.keys())
 
     def get_all_database_info(self, cursor=None, page_size=20):
@@ -158,9 +173,10 @@ class NOTION_API:
         parsed_data, table_header
     ):
         for item in parsed_data["data"]:
-            if item.get("property") in table_header:
-                item["name"] = table_header[item.get("property")]["name"]
-                item["id"] = table_header[item.get("property")]["id"]
+            property = item["property"]
+            assert property in table_header
+            item["name"] = table_header[property]["name"]
+            item["id"] = table_header[property]["id"]
 
         return parsed_data
 
@@ -170,6 +186,7 @@ class NOTION_API:
     ):
         for condition in parsed_data.get("conditions", []):
             parameter = condition.get("parameter")
+            assert parameter in table_header
             if parameter in table_header:
                 condition["name"] = table_header[parameter]["name"]
                 condition["id"] = table_header[parameter]["id"]
@@ -207,44 +224,55 @@ class NOTION_API:
     def __generate_query(sql, val=None):
         if val is not None:
             query = sql.replace("%s", "'%s'")
-            query = sql % val
+            query = query % val
 
         else:
             query = sql
 
         return query
 
-    def insert(self, query):
-        table_header = self.get_table_header_info()
-
+    def insert(self, query: str) -> None:
         parsed_data = MySQLQueryParser(query).parse()
+
+        database_id = self.databases[parsed_data["table_name"]]
+
+        table_header = self.get_table_header_info(database_id)
 
         parsed_data = self.__add_name_and_id_to_parsed_data_for_insert_statements(
             parsed_data, table_header
         )
 
-        payload = self.construct_payload_for_pages_creation(parsed_data)
+        payload = self.construct_payload_for_pages_creation(database_id, parsed_data)
 
-        response = self.request_helper(self.PAGES, method="POST", payload=payload)
+        return self.request_helper(self.PAGES, method="POST", payload=payload)
 
-    def insert_many(self, sql, val):
-        table_header = self.get_table_header_info()
-
+    def insert_many(self, sql, val) -> list:
+        results = []
         for row in val:
             query = self.__generate_query(sql, row)
 
             parsed_data = MySQLQueryParser(query).parse()
+            database_id = self.databases[parsed_data["table_name"]]
+            table_header = self.get_table_header_info(database_id)
             parsed_data = self.__add_name_and_id_to_parsed_data_for_insert_statements(
                 parsed_data, table_header
             )
-            payload = self.construct_payload_for_pages_creation(parsed_data)
-            response = self.request_helper(self.PAGES, method="POST", payload=payload)
+            payload = self.construct_payload_for_pages_creation(
+                database_id, parsed_data
+            )
+            results.append(
+                self.request_helper(self.PAGES, method="POST", payload=payload)
+            )
+        return results
 
     def select(self, query):
-        table_header = self.get_table_header_info()
         parsed_data = MySQLQueryParser(query).parse()
 
-        # We will need to add title, rich_text or number acc to the type of the property in the parsed_data which is parsed from the SELECT statement
+        database_id = self.databases[parsed_data["table_name"]]
+
+        table_header = self.get_table_header_info(database_id)
+
+        # We will need to add title, rich_text or number acc to the type of the property in the parsed_data which is parsed from the SELECT statement.
         # We only need to add name and id if there are condition in the statement
 
         if parsed_data.get("conditions") is not None:
@@ -256,7 +284,7 @@ class NOTION_API:
         property_names = (
             parsed_data.get("columns", None)
             if parsed_data.get("columns")
-            else self.get_table_header()
+            else self.get_table_header(database_id)
         )
 
         results = {
@@ -297,24 +325,26 @@ class NOTION_API:
 
                 if condition.get("operator") == "LIKE":
                     filter = {
-                        "property": condition.get("parameter"),
-                        "title": {"contains": condition.get("value")},
+                        "property": condition["parameter"],
+                        "title": {"contains": condition["value"]},
                     }
 
                 else:
+                    print(condition)
                     filter = {
-                        "property": condition.get("parameter"),
-                        condition.get("name"): {
-                            self.CONDITION_MAPPING.get(
-                                condition.get("operator")
-                            ): condition.get("value")
+                        "property": condition["parameter"],
+                        condition["name"]: {
+                            self.CONDITION_MAPPING[condition["operator"]]: condition[
+                                "value"
+                            ]
                         },
                     }
+                    print(filter)
 
                 payload["filter"]["and"].append(filter)
 
         response = self.request_helper(
-            self.QUERY_DATABASE.format(self.databaseId), method="POST", payload=payload
+            self.QUERY_DATABASE.format(database_id), method="POST", payload=payload
         ).json()
 
         for entry in response["results"]:
@@ -329,17 +359,17 @@ class NOTION_API:
                 prop_value = None
 
                 if prop_type and prop_type in prop_data:
-                    try:
-                        if prop_type in ["title", "rich_text"]:
-                            prop_value = prop_data[prop_type][0].get("plain_text", "")
+                    if prop_type in ["title", "rich_text"]:
+                        prop_value = (prop_data[prop_type] or [{}])[0].get(
+                            "plain_text", ""
+                        )
 
-                        elif prop_type == "number":
-                            prop_value = prop_data.get("number", None)
+                    elif prop_type == "url":
+                        prop_value = prop_data.get("url", None)
+                    elif prop_type == "number":
+                        prop_value = prop_data.get("number", None)
 
-                        else:
-                            prop_value = None
-
-                    except:
+                    else:
                         prop_value = None
 
                 single_dict[prop_name.lower()] = prop_value
@@ -356,39 +386,46 @@ class NOTION_API:
 
         return results
 
-    def update(self, query):
-        table_header = self.get_table_header_info()
-
+    def update(self, query) -> None:
         parsed_data = MySQLQueryParser(query).parse()
+        database_id = self.databases[parsed_data["table_name"]]
+
+        table_header = self.get_table_header_info(database_id)
 
         parsed_data = self.__add_name_and_id_to_parsed_data_for_update_statements(
             parsed_data, table_header
         )
 
         select_statement_response = self.select(
-            "SELECT * from TEMP WHERE {}".format(parsed_data.get("where_clause"))
+            "SELECT * from {} {}".format(
+                parsed_data["table_name"], parsed_data.get("where_clause")
+            )
         )
 
         if not len(select_statement_response["data"]) >= 0:
             raise ValueError("No Data Found")
 
         for entry in select_statement_response["data"]:
-            payload = self.construct_payload_for_pages_creation(parsed_data)
+            payload = self.construct_payload_for_pages_creation(
+                database_id, parsed_data
+            )
 
             # We don't want "parent" key in the payload
             payload.pop("parent")
 
-            response = self.request_helper(
+            self.request_helper(
                 url=self.UPDATE_PAGE.format(entry["id"]),
                 method="PATCH",
                 payload=payload,
             )
 
-    def delete(self, query):
+    def delete(self, query) -> None:
         parsed_data = MySQLQueryParser(query).parse()
 
         select_statement_response = self.select(
-            "SELECT * from TEMP WHERE {}".format(parsed_data.get("where_clause"))
+            "SELECT * from {} {}".format(
+                parsed_data["table_name"], parsed_data.get("where_clause")
+            )
         )
 
         if not len(select_statement_response["data"]) >= 0:
@@ -399,14 +436,14 @@ class NOTION_API:
                 "in_trash": True,
             }
 
-            response = self.request_helper(
+            self.request_helper(
                 url=self.DELETE_PAGE.format(entry["id"]),
                 method="PATCH",
                 payload=payload,
             )
 
     def execute(self, sql, val=None):
-        if val is not None and type(val) == list:
+        if val is not None and isinstance(val, list):
             query = sql
             to_execute_many = True
 
@@ -432,7 +469,7 @@ class NOTION_API:
                 self.delete(query)
 
             else:
-                raise ValueError(f"Unsupported operation")
+                raise ValueError("Unsupported operation")
 
         else:
             raise ValueError(
