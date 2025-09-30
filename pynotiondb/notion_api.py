@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 from functools import lru_cache
 
 import requests
@@ -30,7 +31,7 @@ class NotionAPI:
     QUERY_DATABASE = "https://api.notion.com/v1/databases/{}/query"
     DEFAULT_PAGE_SIZE_FOR_SELECT_STATEMENTS = 20
     token: str
-    table_parent_page: str | None
+    table_parent_page: Optional[str]
 
     CONDITION_MAPPING = {
         "EQ": "equals",
@@ -44,7 +45,7 @@ class NotionAPI:
         self,
         token: str,
         *,
-        table_parent_page: str | None = None,
+        table_parent_page: Optional[str] = None,
     ) -> None:
         self.token = token
         self.table_parent_page = table_parent_page
@@ -513,3 +514,4 @@ class NotionAPI:
             raise ValueError(
                 "Invalid SQL statement or type of statement not implemented"
             )
+
