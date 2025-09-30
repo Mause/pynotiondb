@@ -1,4 +1,37 @@
 # serializer version: 1
+# name: test_notion
+  dict({
+    'parent': dict({
+      'database_id': 'PARENT_PAGE',
+    }),
+    'properties': dict({
+      'id': dict({
+        'number': True,
+      }),
+      'title': dict({
+        'title': dict({
+        }),
+      }),
+    }),
+    'title': list([
+      dict({
+        'text': dict({
+          'content': 'table1',
+        }),
+      }),
+    ]),
+  })
+# ---
+# name: test_sql_parser[CREATE TABLE IF NOT EXISTS table1 (title title, id int);]
+  dict({
+    'columns': dict({
+      'id': 'INT',
+      'title': 'title',
+    }),
+    'exists': True,
+    'table_name': 'table1',
+  })
+# ---
 # name: test_sql_parser[DELETE FROM table1 WHERE column1 = 'value1';]
   dict({
     'table_name': 'table1',

@@ -3,6 +3,7 @@ from sqlglot.expressions import (
     EQ,
     And,
     Binary,
+    Create,
     Delete,
     Expression,
     Insert,
@@ -128,6 +129,23 @@ class MySQLQueryParser:
 
         return {"table_name": table_name, "where_clause": where_clause}
 
+    def extract_create_statement_info(self) -> dict:
+        match: Create = self.statement
+        assert match.kind == "TABLE"
+        schema = match.this
+
+        table_name = schema.this.text("this")
+        columns = {
+            col.text("this"): col.kind.args.get("kind", col.kind.this.value)
+            for col in schema.expressions
+        }
+
+        return {
+            "table_name": table_name,
+            "columns": columns,
+            "exists": match.args.get("exists", False),
+        }
+
     def extract_set_values(self, set_values_str: list[EQ]) -> list[dict]:
         set_values = []
         # Split by 'AND', but not within quotes
@@ -153,6 +171,9 @@ class MySQLQueryParser:
         if isinstance(self.statement, Delete):
             return self.extract_delete_statement_info()
 
+        if isinstance(self.statement, Create):
+            return self.extract_create_statement_info()
+
         raise ValueError("Invalid SQL statement")
 
     def check_statement(self) -> tuple[bool, str]:
@@ -164,5 +185,7 @@ class MySQLQueryParser:
             return True, "update"
         if isinstance(self.statement, Delete):
             return True, "delete"
+        elif isinstance(self.statement, Create):
+            return True, "create"
 
         return False, "unknown"

@@ -1,11 +1,25 @@
 import logging
+from typing import Optional
+from functools import lru_cache
 
 import requests
+from notion_client import Client
 
 from .exceptions import NotionAPIError
 from .mysql_query_parser import MySQLQueryParser
 
 logger = logging.getLogger(__name__)
+
+
+def format_type(s: str) -> dict:
+    if s == "INT":
+        return {"number": True}
+    elif s == "VARCHAR":
+        return {"rich_text": {}}
+    elif s == "title":
+        return {"title": {}}
+    else:
+        raise Exception(s)
 
 
 class NotionAPI:
@@ -17,7 +31,7 @@ class NotionAPI:
     QUERY_DATABASE = "https://api.notion.com/v1/databases/{}/query"
     DEFAULT_PAGE_SIZE_FOR_SELECT_STATEMENTS = 20
     token: str
-    databases: dict[str, str]
+    table_parent_page: Optional[str]
 
     CONDITION_MAPPING = {
         "EQ": "equals",
@@ -27,9 +41,14 @@ class NotionAPI:
         ">=": "greater_than_or_equal_to",
     }
 
-    def __init__(self, token: str, databases: dict[str, str]) -> None:
+    def __init__(
+        self,
+        token: str,
+        *,
+        table_parent_page: Optional[str] = None,
+    ) -> None:
         self.token = token
-        self.databases = databases
+        self.table_parent_page = table_parent_page
         self.DEFAULT_NOTION_VERSION = "2022-06-28"
         self.AUTHORIZATION = "Bearer " + self.token
         self.headers = {
@@ -39,6 +58,7 @@ class NotionAPI:
         }
         self.session = requests.Session()
         self.session.headers.update(self.headers)
+        self.client = Client(auth=token)
 
     def request_helper(self, url: str, method: str = "GET", payload=None):
         response = self.session.request(method, url, json=payload)
@@ -161,6 +181,11 @@ class NotionAPI:
         data["previous_cursor"] = dbs_info.get("previous_cursor")
 
         return data
+
+    @property
+    @lru_cache()
+    def databases(self):
+        return {db["title"]: db["id"] for db in self.get_all_database_info()["results"]}
 
     def get_all_database(self):
         dbs = self.get_all_database_info()
@@ -419,6 +444,17 @@ class NotionAPI:
                 payload=payload,
             )
 
+    def create(self, query: str) -> None:
+        if not self.table_parent_page:
+            raise Exception("Parent for new tables must be specified")
+        parsed_data = MySQLQueryParser(query).parse()
+        props = {col: format_type(typ) for col, typ in parsed_data["columns"].items()}
+        return self.client.databases.create(
+            title=[{"text": {"content": parsed_data["table_name"]}}],
+            parent={"database_id": self.table_parent_page},
+            properties=props,
+        )
+
     def delete(self, query) -> None:
         parsed_data = MySQLQueryParser(query).parse()
 
@@ -468,6 +504,9 @@ class NotionAPI:
             elif to_do == "delete":
                 self.delete(query)
 
+            elif to_do == "create":
+                return self.create(query)
+
             else:
                 raise ValueError("Unsupported operation")
 
@@ -475,3 +514,4 @@ class NotionAPI:
             raise ValueError(
                 "Invalid SQL statement or type of statement not implemented"
             )
+

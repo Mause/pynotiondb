@@ -1,6 +1,12 @@
-from pytest import mark
+import json
 
+from pytest import mark
+from respx import MockRouter
+
+from pynotiondb import NotionAPI
 from pynotiondb.mysql_query_parser import MySQLQueryParser
+
+create_sql = "CREATE TABLE IF NOT EXISTS table1 (title title, id int);"
 
 
 @mark.parametrize(
@@ -13,6 +19,7 @@ from pynotiondb.mysql_query_parser import MySQLQueryParser
         "DELETE FROM table1 WHERE column1 = 'value1';",
         "SELECT * FROM table1 WHERE column1=1 AND column2='text' OR column3 IS NULL;",
         "SELECT *, agg_list(column) FROM table GROUP BY column2 LIMIT 10 OFFSET 5;",
+        create_sql,
     ],
 )
 def test_sql_parser(sql: str, snapshot):
@@ -21,3 +28,13 @@ def test_sql_parser(sql: str, snapshot):
     assert ok
 
     snapshot.assert_match(parser.parse())
+
+
+def test_notion(snapshot):
+    with MockRouter(base_url="https://api.notion.com/v1") as req:
+        call = req.post("/databases").respond(200, json={})
+        notion = NotionAPI("", table_parent_page="PARENT_PAGE")
+        notion.execute(create_sql)
+
+        assert call.called
+        assert snapshot == json.loads(req.calls.last.request.content)
